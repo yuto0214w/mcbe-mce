@@ -10,11 +10,19 @@ use windows::Win32::{
     UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
 };
 
+static mut SCREEN_CENTER_X: i32 = 0;
+static mut SCREEN_CENTER_Y: i32 = 0;
+
 // mod tests;
 
 fn main() {
     let hook: Arc<Mutex<Option<HHOOK>>> = Arc::new(Mutex::new(None));
     let c_hook = Arc::clone(&hook);
+
+    unsafe {
+        SCREEN_CENTER_X = GetSystemMetrics(SM_CXSCREEN) / 2;
+        SCREEN_CENTER_Y = GetSystemMetrics(SM_CYSCREEN) / 2;
+    }
 
     thread::spawn(move || unsafe {
         *c_hook.lock().unwrap() = Some(SetWindowsHookExA(
@@ -60,7 +68,7 @@ fn main() {
 unsafe extern "system" fn ll_keyboard_proc(code: i32, wp: WPARAM, lp: LPARAM) -> LRESULT {
     let kbs = *(lp.0 as *const KBDLLHOOKSTRUCT);
     if kbs.vkCode == VK_E as u32 && wp.0 == WM_KEYDOWN as usize {
-        SetCursorPos(960, 540);
+        SetCursorPos(SCREEN_CENTER_X, SCREEN_CENTER_Y);
     }
     // Q. Why None? Specify Hook!
     // A. I mean it's optional, and static hook isn't option
